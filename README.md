@@ -19,7 +19,7 @@ Configurable Twitch bot used for Wynter written in python using twitchio.
 
 ## About The Project
 
-![Product Screenshot](https://i.postimg.cc/CKgfYfwD/Banner.png)
+![Product Screenshot](https://i.postimg.cc/GtVHf4M4/Twitch-Banner.png)
 
 Being frustrated with the limitations and costs of commercial twitch bots, I decided my first 'learning python' project would be this Dockerized Twitch Bot.
 
