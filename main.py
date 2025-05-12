@@ -131,22 +131,31 @@ class MyComponent(commands.Component):
         await ctx.send("Join the discord! https://discord.gg/w2xNN7RS7c")
 
     @commands.Component.listener()
-    async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
+    async def event_stream_online(self, payload: twitchio.StreamOnline, ctx: commands.Context) -> None:
         # Event dispatched when a user goes live from the subscription we made above...
-        print(f'He is Live!')
+        print("Stream Online!")
+        self.loop = True
+        while self.loop:
+            await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
+            await asyncio.sleep(1800)
 
     @commands.Component.listener()
-    async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
+    async def event_stream_offline(self, payload: twitchio.StreamOffline, ctx: commands.Context) -> None:
         # Event dispatched when a user goes live from the subscription we made above...
-        print(f'He is Offline!')
+        self.loop = False
 
-    @commands.command(name="start")
+    @commands.command(name="toggle")
     @commands.is_moderator()
-    async def start(self, ctx: commands.Context):
+    async def toggle(self, ctx: commands.Context):
         """Mod command to start the 30 min auto social post
 
         """
-        while True:
+        if self.loop:
+            print("Loop already Running! Stopping Loop...")
+            self.loop = False
+        else:
+            self.loop = True
+        while self.loop:
             await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
             await asyncio.sleep(1800)
 
