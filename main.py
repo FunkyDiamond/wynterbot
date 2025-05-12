@@ -94,7 +94,8 @@ class MyComponent(commands.Component):
         # Passing args is not required...
         # We pass bot here as an example...
         self.bot = bot
-        self.bonk = 0
+        bonkread = open("./bonks/bonks.txt", "r+")
+        self.bonks = int(bonkread.read())
 
     # We use a listener in our Component to display the messages received.
     @commands.Component.listener()
@@ -107,7 +108,10 @@ class MyComponent(commands.Component):
 
         !bonk
         """
-        self.bonk += 1
+        self.bonks += 1
+        bonkwrite = open("bonks.txt", "w")
+        bonkwrite.write(str(self.bonks))
+        
         await ctx.send(f"BOP {ctx.chatter.mention} bonked Wynter! He's been bonked {self.bonk} times!")
 
     @commands.group(invoke_fallback=True)
@@ -135,6 +139,17 @@ class MyComponent(commands.Component):
     async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
         # Event dispatched when a user goes live from the subscription we made above...
         print(f'He is Offline!')
+
+    @commands.command(name="start")
+    @commands.is_moderator()
+    async def start(self, ctx: commands.Context):
+        """Mod command to start the 30 min auto social post
+
+        """
+        while True:
+            await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
+            await asyncio.sleep(1800)
+
 
 #Run Bot
 def main() -> None:
