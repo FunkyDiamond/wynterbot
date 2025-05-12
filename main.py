@@ -109,7 +109,7 @@ class MyComponent(commands.Component):
         !bonk
         """
         self.bonks += 1
-        bonkwrite = open("bonks.txt", "w")
+        bonkwrite = open("./bonks/bonks.txt", "w")
         bonkwrite.write(str(self.bonks))
         
         await ctx.send(f"BOP {ctx.chatter.mention} bonked Wynter! He's been bonked {self.bonk} times!")
