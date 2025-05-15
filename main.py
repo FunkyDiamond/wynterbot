@@ -98,26 +98,25 @@ class MyComponent(commands.Component):
         self.bot = bot
         bonkread = open(BONK_LINK, "r+")
         self.bonks = int(bonkread.read())
-
-    async def socials_loop(self, payload: twitchio.StreamOnline):
-        self.loop = True
-        try:
-            while self.loop:
-                await payload.broadcaster.send_message(
-                    sender=self.bot.bot_id,
-                    message=f"DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance",
-                )
-                await asyncio.sleep(1800)
-        except asyncio.CancelledError:
-            raise
-        finally:
-            self.loop = False
-            print("Loop has stopped...")
+        nicetryread = open(NICETRY, "r+")
+        self.nicetry = int(nicetryread.read())
 
     # We use a listener in our Component to display the messages received.
     @commands.Component.listener()
     async def event_message(self, payload: twitchio.ChatMessage) -> None:
-        print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
+        nice = "Nice Try!"
+        message = f"{payload.text}"
+        if message == nice:
+            print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
+            self.nicetry += 1
+            nicetrywrite = open(NICETRY, "w")
+            nicetrywrite.write(str(self.nicetry))
+            await payload.broadcaster.send_message(
+                    sender=self.bot.bot_id,
+                    message=f"NiceTry Wynter has had {self.nicetry} nice tries!",
+                )
+        else:
+           print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}") 
 
     @commands.command(name="bonk")
     async def bonk(self, ctx: commands.Context) -> None:
@@ -150,41 +149,42 @@ class MyComponent(commands.Component):
     @commands.Component.listener()
     async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
         # Event dispatched when a user goes live from the subscription we made above...
-        asyncio.run(self.socials_loop())
-        print("Stream Online!")
+        if self.loop:
+            print("Stream Online!")
+        else:
+            await payload.broadcaster.send_message(
+                sender=self.bot.bot_id,
+                message=f"!toggle",
+            )
+            print("Stream Online!")
 
     @commands.Component.listener()
     async def event_stream_offline(self, payload: twitchio.StreamOffline) -> None:
         # Event dispatched when a user goes offline from the subscription we made above...
-        online_loop = asyncio.create_task(self.event_stream_online())
-        
-        await asyncio.sleep(1)
-        online_loop.cancel()
-
-        try:
-            await online_loop
-        except asyncio.CancelledError:
+        if self.loop:
+            await payload.broadcaster.send_message(
+                sender=self.bot.bot_id,
+                message=f"!toggle",
+            )
+            print("Stream Offline...")
+        else:
             print("Stream Offline...")
 
     @commands.command(name="toggle")
     @commands.is_moderator()
     async def toggle(self, ctx: commands.Context):
-        """Mod command to start the 30 min auto social post
+        """Mod command to toggle the 30 min auto social post
 
         """
-        online_loop = asyncio.create_task(self.event_stream_online())
-
         if self.loop:
-            print("Loop already Running! Stopping Loop...")
-            await asyncio.sleep(1)
-            online_loop.cancel
-            try:
-                await online_loop
-            except asyncio.CancelledError:
-                print("Loop stopped by command...")
+            print("Loop Running! Stopping Loop...")
+            self.loop = False
+            await ctx.send("Okay, I'll stop FallCry")
         else:
-            asyncio.run(self.socials_loop())
-
+            self.loop = True
+            while self.loop:
+                await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance",)
+                await asyncio.sleep(1800)
 
 #Run Bot
 def main() -> None:
