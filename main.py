@@ -131,18 +131,22 @@ class MyComponent(commands.Component):
         await ctx.send("Join the discord! https://discord.gg/w2xNN7RS7c")
 
     @commands.Component.listener()
-    async def event_stream_online(self, payload: twitchio.StreamOnline, ctx: commands.Context) -> None:
+    async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
         # Event dispatched when a user goes live from the subscription we made above...
         print("Stream Online!")
         self.loop = True
         while self.loop:
-            await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
+            await payload.broadcaster.send_message(
+                sender=self.bot.bot_id,
+                message=f"DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance",
+            )
             await asyncio.sleep(1800)
 
     @commands.Component.listener()
-    async def event_stream_offline(self, payload: twitchio.StreamOffline, ctx: commands.Context) -> None:
-        # Event dispatched when a user goes live from the subscription we made above...
+    async def event_stream_offline(self, payload: twitchio.StreamOffline) -> None:
+        # Event dispatched when a user goes offline from the subscription we made above...
         self.loop = False
+        print("Stream Offline...")
 
     @commands.command(name="toggle")
     @commands.is_moderator()
