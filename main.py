@@ -90,12 +90,29 @@ class Bot(commands.Bot):
 
 class MyComponent(commands.Component):
     
+    loop = False
+
     def __init__(self, bot: Bot):
         # Passing args is not required...
         # We pass bot here as an example...
         self.bot = bot
-        bonkread = open("./bonks/bonks.txt", "r+")
+        bonkread = open(BONK_LINK, "r+")
         self.bonks = int(bonkread.read())
+
+    async def socials_loop(self, payload: twitchio.StreamOnline):
+        self.loop = True
+        try:
+            while self.loop:
+                await payload.broadcaster.send_message(
+                    sender=self.bot.bot_id,
+                    message=f"DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance",
+                )
+                await asyncio.sleep(1800)
+        except asyncio.CancelledError:
+            raise
+        finally:
+            self.loop = False
+            print("Loop has stopped...")
 
     # We use a listener in our Component to display the messages received.
     @commands.Component.listener()
@@ -109,10 +126,10 @@ class MyComponent(commands.Component):
         !bonk
         """
         self.bonks += 1
-        bonkwrite = open("./bonks/bonks.txt", "w")
+        bonkwrite = open(BONK_LINK, "w")
         bonkwrite.write(str(self.bonks))
-        
-        await ctx.send(f"BOP {ctx.chatter.mention} bonked Wynter! He's been bonked {self.bonk} times!")
+
+        await ctx.send(f"BOP {ctx.chatter.mention} bonked Wynter! He's been bonked {self.bonks} times!")
 
     @commands.group(invoke_fallback=True)
     async def socials(self, ctx: commands.Context) -> None:
@@ -120,7 +137,7 @@ class MyComponent(commands.Component):
 
         !socials
         """
-        await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c www.youtube.com/@WynterVT https://x.com/WynterVT")
+        await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
 
     @commands.command(name="discord")
     async def socials_discord(self, ctx: commands.Context) -> None:
@@ -133,20 +150,21 @@ class MyComponent(commands.Component):
     @commands.Component.listener()
     async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
         # Event dispatched when a user goes live from the subscription we made above...
+        asyncio.run(self.socials_loop())
         print("Stream Online!")
-        self.loop = True
-        while self.loop:
-            await payload.broadcaster.send_message(
-                sender=self.bot.bot_id,
-                message=f"DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance",
-            )
-            await asyncio.sleep(1800)
 
     @commands.Component.listener()
     async def event_stream_offline(self, payload: twitchio.StreamOffline) -> None:
         # Event dispatched when a user goes offline from the subscription we made above...
-        self.loop = False
-        print("Stream Offline...")
+        online_loop = asyncio.create_task(self.event_stream_online())
+        
+        await asyncio.sleep(1)
+        online_loop.cancel()
+
+        try:
+            await online_loop
+        except asyncio.CancelledError:
+            print("Stream Offline...")
 
     @commands.command(name="toggle")
     @commands.is_moderator()
@@ -154,14 +172,18 @@ class MyComponent(commands.Component):
         """Mod command to start the 30 min auto social post
 
         """
+        online_loop = asyncio.create_task(self.event_stream_online())
+
         if self.loop:
             print("Loop already Running! Stopping Loop...")
-            self.loop = False
+            await asyncio.sleep(1)
+            online_loop.cancel
+            try:
+                await online_loop
+            except asyncio.CancelledError:
+                print("Loop stopped by command...")
         else:
-            self.loop = True
-        while self.loop:
-            await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
-            await asyncio.sleep(1800)
+            asyncio.run(self.socials_loop())
 
 
 #Run Bot
