@@ -100,13 +100,26 @@ class MyComponent(commands.Component):
         self.bonks = int(bonkread.read())
         nicetryread = open(NICETRY, "r+")
         self.nicetry = int(nicetryread.read())
+        niceread = open(NICE, "r+")
+        self.nice = int(niceread.read())
 
     # We use a listener in our Component to display the messages received.
     @commands.Component.listener()
     async def event_message(self, payload: twitchio.ChatMessage) -> None:
-        nice = "Nice Try!"
+        nice = "Nice!"
+        nice_try = "Nice Try!"
         message = f"{payload.text}"
+
         if message == nice:
+            print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
+            self.nice += 1
+            nicewrite = open(NICE, "w")
+            nicewrite.write(str(self.nice))
+            await payload.broadcaster.send_message(
+                    sender=self.bot.bot_id,
+                    message=f"BangbooBounce {self.nice} people found that nice!",
+            )
+        elif message == nice_try:
             print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
             self.nicetry += 1
             nicetrywrite = open(NICETRY, "w")
@@ -114,10 +127,16 @@ class MyComponent(commands.Component):
             await payload.broadcaster.send_message(
                     sender=self.bot.bot_id,
                     message=f"NiceTry Wynter has had {self.nicetry} nice tries!",
-                )
+            )
         else:
-           print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}") 
+            print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
 
+    #Help command that shows available commands that users can use
+    @commands.command(name="help")
+    async def help(self, ctx: commands.Context) -> None:
+        await ctx.reply("Here's a list of available commands: !bonk !socials !discord")
+
+    #BONK
     @commands.command(name="bonk")
     async def bonk(self, ctx: commands.Context) -> None:
         """Give 'em a bonk!
@@ -130,6 +149,7 @@ class MyComponent(commands.Component):
 
         await ctx.send(f"BOP {ctx.chatter.mention} bonked Wynter! He's been bonked {self.bonks} times!")
 
+    #Socials Command
     @commands.group(invoke_fallback=True)
     async def socials(self, ctx: commands.Context) -> None:
         """Group command for our social links.
@@ -138,37 +158,24 @@ class MyComponent(commands.Component):
         """
         await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
 
+    #Discord Command
     @commands.command(name="discord")
     async def socials_discord(self, ctx: commands.Context) -> None:
         """Sub command of socials that sends only our discord invite.
 
         !socials discord
         """
-        await ctx.send("Join the discord! https://discord.gg/w2xNN7RS7c")
+        await ctx.send("DinoDance Join the discord! https://discord.gg/w2xNN7RS7c DinoDance")
 
     @commands.Component.listener()
     async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
         # Event dispatched when a user goes live from the subscription we made above...
-        if self.loop:
-            print("Stream Online!")
-        else:
-            await payload.broadcaster.send_message(
-                sender=self.bot.bot_id,
-                message=f"!toggle",
-            )
-            print("Stream Online!")
+        print("Stream is online!")
 
     @commands.Component.listener()
     async def event_stream_offline(self, payload: twitchio.StreamOffline) -> None:
         # Event dispatched when a user goes offline from the subscription we made above...
-        if self.loop:
-            await payload.broadcaster.send_message(
-                sender=self.bot.bot_id,
-                message=f"!toggle",
-            )
-            print("Stream Offline...")
-        else:
-            print("Stream Offline...")
+        print("Stream is offline...")
 
     @commands.command(name="toggle")
     @commands.is_moderator()
