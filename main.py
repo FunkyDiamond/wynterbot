@@ -11,19 +11,16 @@ from twitchio import eventsub
 from twitchio import web
 
 
-#Twitch Credentials // Can convert Twitch usernames to ID @ https://www.streamweasels.com/tools/convert-twitch-username-%20to-user-id/
+# Twitch Credentials // Can convert Twitch usernames to ID @ https://www.streamweasels.com/tools/convert-twitch-username-%20to-user-id/
 CLIENT_ID = 'twitch-app-id'
 CLIENT_SECRET = 'twitch-app-secret'
 USER_ID = 'broadcaster-id'
 BOT_ID = 'bot-id'
 
-#Websocket Stuff
-WEBSOCKET = 'http://localhost:4343/'
-
-#Twitch Auth
+# Twitch Auth
 LOGGER: logging.Logger = logging.getLogger("Bot")
 
-#Twitch Bot
+# Twitch Bot
 class Bot(commands.Bot):
     def __init__(self, *, token_database: asqlite.Pool) -> None:
         self.token_database = token_database
@@ -34,20 +31,55 @@ class Bot(commands.Bot):
             owner_id=USER_ID,
             prefix="!",
         )
-    #Comment out on first run, visit http://localhost:4343/oauth?scopes=user:read:chat%20user:write:chat%20user:bot while logged into bot account,  http://localhost:4343/oauth?scopes=channel:bot while logged into broadcaster account
+    # Comment out on first run, visit http://localhost:4343/oauth?scopes=user:read:chat%20user:write:chat%20moderator:read:followers%20moderator:manage:announcements%20moderator:manage:chat_messages%20user:bot while logged into bot account,  http://localhost:4343/oauth?scopes=channel:bot%20channel:manage:redemptions%20channel:read:subscriptions while logged into broadcaster account
     async def setup_hook(self) -> None:
-        # Add our component which contains our commands...
-        await self.add_component(MyComponent(self))
-
         # Subscribe to read chat (event_message) from our channel as the bot...
         # This creates and opens a websocket to Twitch EventSub...
         subscription = eventsub.ChatMessageSubscription(broadcaster_user_id=USER_ID, user_id=BOT_ID)
         await self.subscribe_websocket(payload=subscription)
 
         # Subscribe and listen to when a stream goes live..
-        # For this example listen to our own stream...
         subscription = eventsub.StreamOnlineSubscription(broadcaster_user_id=USER_ID)
         await self.subscribe_websocket(payload=subscription)
+
+        # Subscirbe and listen to Reward redemptions and updates...
+        subscription = eventsub.ChannelPointsRedeemAddSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        subscription = eventsub.ChannelPointsRedeemUpdateSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        subscription = eventsub.ChannelPointsAutoRedeemSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        subscription = eventsub.ChannelPointsAutoRedeemV2Subscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        # Subscribe and listen for Follows
+        subscription = eventsub.ChannelFollowSubscription(broadcaster_user_id=USER_ID, moderator_user_id=BOT_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        # Subscribe and listen to Raids
+        subscription = eventsub.ChannelRaidSubscription(to_broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        # Subscribe and listen for Subs
+        subscription = eventsub.ChannelSubscribeSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        subscription = eventsub.ChannelSubscribeMessageSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        subscription = eventsub.ChannelSubscriptionGiftSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        # Load the module that contains our component, commands, and listeners.
+        # Modules can have multiple components
+        await self.load_module("components.owner_cmds")
+        await self.load_module("components.cmds")
+        await self.load_module("components.chat")
+        await self.load_module("components.redeems")
+        await self.load_module("components.listeners")
 
     async def add_token(self, token: str, refresh: str) -> twitchio.authentication.ValidateTokenPayload:
         # Make sure to call super() as it will add the tokens interally and return us some data...
@@ -87,113 +119,7 @@ class Bot(commands.Bot):
     async def event_ready(self) -> None:
         LOGGER.info("Successfully logged in as: %s", self.bot_id)
 
-
-class MyComponent(commands.Component):
-    
-    loop = False
-
-    def __init__(self, bot: Bot):
-        # Passing args is not required...
-        # We pass bot here as an example...
-        self.bot = bot
-        bonkread = open(BONK_LINK, "r+")
-        self.bonks = int(bonkread.read())
-        nicetryread = open(NICETRY, "r+")
-        self.nicetry = int(nicetryread.read())
-        niceread = open(NICE, "r+")
-        self.nice = int(niceread.read())
-
-    # We use a listener in our Component to display the messages received.
-    @commands.Component.listener()
-    async def event_message(self, payload: twitchio.ChatMessage) -> None:
-        nice = "Nice!"
-        nice_try = "Nice Try!"
-        message = f"{payload.text}"
-
-        if message == nice:
-            print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
-            self.nice += 1
-            nicewrite = open(NICE, "w")
-            nicewrite.write(str(self.nice))
-            await payload.broadcaster.send_message(
-                    sender=self.bot.bot_id,
-                    message=f"BangbooBounce {self.nice} people found that nice!",
-            )
-        elif message == nice_try:
-            print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
-            self.nicetry += 1
-            nicetrywrite = open(NICETRY, "w")
-            nicetrywrite.write(str(self.nicetry))
-            await payload.broadcaster.send_message(
-                    sender=self.bot.bot_id,
-                    message=f"NiceTry Wynter has had {self.nicetry} nice tries!",
-            )
-        else:
-            print(f"[{payload.broadcaster.name}] - {payload.chatter.name}: {payload.text}")
-
-    #Help command that shows available commands that users can use
-    @commands.command(name="help")
-    async def help(self, ctx: commands.Context) -> None:
-        await ctx.reply("Here's a list of available commands: !bonk !socials !discord")
-
-    #BONK
-    @commands.command(name="bonk")
-    async def bonk(self, ctx: commands.Context) -> None:
-        """Give 'em a bonk!
-
-        !bonk
-        """
-        self.bonks += 1
-        bonkwrite = open(BONK_LINK, "w")
-        bonkwrite.write(str(self.bonks))
-
-        await ctx.send(f"BOP {ctx.chatter.mention} bonked Wynter! He's been bonked {self.bonks} times!")
-
-    #Socials Command
-    @commands.group(invoke_fallback=True)
-    async def socials(self, ctx: commands.Context) -> None:
-        """Group command for our social links.
-
-        !socials
-        """
-        await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance")
-
-    #Discord Command
-    @commands.command(name="discord")
-    async def socials_discord(self, ctx: commands.Context) -> None:
-        """Sub command of socials that sends only our discord invite.
-
-        !socials discord
-        """
-        await ctx.send("DinoDance Join the discord! https://discord.gg/w2xNN7RS7c DinoDance")
-
-    @commands.Component.listener()
-    async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
-        # Event dispatched when a user goes live from the subscription we made above...
-        print("Stream is online!")
-
-    @commands.Component.listener()
-    async def event_stream_offline(self, payload: twitchio.StreamOffline) -> None:
-        # Event dispatched when a user goes offline from the subscription we made above...
-        print("Stream is offline...")
-
-    @commands.command(name="toggle")
-    @commands.is_moderator()
-    async def toggle(self, ctx: commands.Context):
-        """Mod command to toggle the 30 min auto social post
-
-        """
-        if self.loop:
-            print("Loop Running! Stopping Loop...")
-            self.loop = False
-            await ctx.send("Okay, I'll stop FallCry")
-        else:
-            self.loop = True
-            while self.loop:
-                await ctx.send("DinoDance Check out the socials! https://discord.gg/w2xNN7RS7c https://youtube.com/@WynterVT https://x.com/WynterVT DinoDance",)
-                await asyncio.sleep(1800)
-
-#Run Bot
+# Run Bot
 def main() -> None:
     twitchio.utils.setup_logging(level=logging.INFO)
 
@@ -201,7 +127,6 @@ def main() -> None:
         async with asqlite.create_pool("tokens.db") as tdb, Bot(token_database=tdb) as bot:
             await bot.setup_database()
             await bot.start()
-
     try:
         asyncio.run(runner())
     except KeyboardInterrupt:
