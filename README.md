@@ -28,6 +28,9 @@ This bot uses twitchio for api and command handling, making it very easy to add 
 The initial intent was to use this bot as a way to post Discord notifications, but haven't figured out how to make them work together -- I still have LOTS to learn.
 
 After being configured and tokens have been created to the database, the included Dockerfile can be used to build a docker image of your configuration and run in a container.
+
+Be sure to read through all modules to fill in your credentials and better understand how the bot functions
+
 ### Built With
 
 3rd party libraries used:
@@ -144,8 +147,8 @@ Generated App Token for Client-ID: 'your-client-id'
 ```
 
 8. Connect your accounts!
-- Log into your bot account on twitch and go to http://localhost:4343/oauth?scopes=user:read:chat%20user:write:chat%20user:bot
-- Log out of your bot account and into your main, broadcaster account and go to http://localhost:4343/oauth?scopes=channel:bot
+- Log into your bot account on twitch and go to http://localhost:4343/oauth?scopes=user:read:chat%20user:write:chat%20moderator:read:followers%20moderator:manage:announcements%20moderator:manage:chat_messages%20user:bot
+- Log out of your bot account and into your main, broadcaster account and go to http://localhost:4343/oauth?scopes=channel:bot%20channel:manage:redemptions%20channel:read:subscriptions
 - if you see this in your terminal, you're looking good!
 ```sh
 Added token to the database for user: 'bot-id'
@@ -158,12 +161,12 @@ Added token to the database for user: 'broadcaster-id'
 
 And that's it! The next time you run the script, the bot will connect to your channel and listen for events such as going live, chatter messages, cheers, etc.
 
-At this point, you can build the docker image and run a container with your bot on it!
+At this point, you can build the docker image and run a container with your bot on it! Ensure that the "/components/" folder is mounted in your container as "/components"
 
 
 ## Usage
 
-Commands can be added and edited under the 'class MyComponent(commands.Component):'
+Commands can be added and edited using the py files in "./components". after adding or editing, use the !reload command in your cat to hot reload all modules!
 
 More documentation can be found at https://twitchio.dev/en/latest/
 
@@ -174,6 +177,9 @@ Referring to the other commands under the MyComponent class can help with unders
 Only after adding the tokens to your database should you build the docker image. I was experiencing some funkiness when dockerizing first
 
 The Dockerfile will push the python script, database files, and install needed libraries to the docker image
+
+Mount your "./components" directory to "/components" so the bot can load your modules and save images, tts, and text files
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
