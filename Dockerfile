@@ -8,7 +8,7 @@ ADD tokens.db-shm .
 
 ADD tokens.db-wal .
 
-RUN pip install -U twitchio --pre asqlite twitchio[starlette]
+RUN pip install -U twitchio --pre asqlite twitchio[starlette] obsws-python gtts boto3
 
 USER $APP_UID:$APP_GUID
 
