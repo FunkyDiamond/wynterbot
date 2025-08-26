@@ -82,7 +82,7 @@ _Let's start by getting our Twitch API credentials and pulling the repository_
    ```
 3. Install python libraries in cloned directory. Make a virtual environment if you're not using VS Coder.
    ```sh
-   pip install -U twitchio --pre asqlite twitchio[starlette]
+   pip install -U twitchio --pre asqlite twitchio[starlette] obsws-python gtts boto3
    ```
 4. Enter your keys and ids into the variables towards the top of main.py
    ```py
