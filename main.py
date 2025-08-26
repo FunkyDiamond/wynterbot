@@ -31,7 +31,7 @@ class Bot(commands.Bot):
             owner_id=USER_ID,
             prefix="!",
         )
-    # Comment out on first run, visit http://localhost:4343/oauth?scopes=user:read:chat%20user:write:chat%20moderator:read:followers%20moderator:manage:announcements%20moderator:manage:chat_messages%20user:bot while logged into bot account,  http://localhost:4343/oauth?scopes=channel:bot%20channel:manage:redemptions%20channel:read:subscriptions while logged into broadcaster account
+    # Comment out on first run, visit http://localhost:4343/oauth?scopes=user:read:chat%20user:write:chat%20moderator:read:followers%20moderator:manage:announcements%20moderator:manage:chat_messages%20user:bot while logged into bot account, http://localhost:4343/oauth?scopes=channel:bot%20channel:manage:redemptions%20channel:read:subscriptions%20bits:read while logged into broadcaster account
     async def setup_hook(self) -> None:
         # Subscribe to read chat (event_message) from our channel as the bot...
         # This creates and opens a websocket to Twitch EventSub...
@@ -71,6 +71,10 @@ class Bot(commands.Bot):
         await self.subscribe_websocket(payload=subscription)
 
         subscription = eventsub.ChannelSubscriptionGiftSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
+        #Subscribe and listen for bit cheers
+        subscription = eventsub.ChannelCheerSubscription(broadcaster_user_id=USER_ID)
         await self.subscribe_websocket(payload=subscription)
 
         # Load the module that contains our component, commands, and listeners.
