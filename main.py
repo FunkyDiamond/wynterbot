@@ -42,6 +42,10 @@ class Bot(commands.Bot):
         subscription = eventsub.StreamOnlineSubscription(broadcaster_user_id=USER_ID)
         await self.subscribe_websocket(payload=subscription)
 
+         # Subscribe and listen to when a stream goes offline..
+        subscription = eventsub.StreamOfflineSubscription(broadcaster_user_id=USER_ID)
+        await self.subscribe_websocket(payload=subscription)
+
         # Subscirbe and listen to Reward redemptions and updates...
         subscription = eventsub.ChannelPointsRedeemAddSubscription(broadcaster_user_id=USER_ID)
         await self.subscribe_websocket(payload=subscription)
